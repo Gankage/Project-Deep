@@ -57,10 +57,24 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. GET USER ID FROM URL
-        // We look for ?uid=player_2 in the browser address
+        // --- NEW "REMEMBER ME" LOGIC ---
+        
+        // 1. Check URL for ID
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('uid');
+        let userId = urlParams.get('uid');
+
+        // 2. If URL has ID, save it to phone memory
+        if (userId) {
+            localStorage.setItem("deep_userid", userId);
+            console.log("Identity Saved:", userId);
+        } 
+        // 3. If URL is empty, look in phone memory
+        else {
+            userId = localStorage.getItem("deep_userid");
+            console.log("Identity Loaded from Memory:", userId);
+        }
+        
+        // -------------------------------
 
         let playerRef = null;
         let localData = null;
@@ -68,7 +82,11 @@
         if (!userId) {
             document.getElementById("ui-container").innerHTML = `
                 <div class='error'>NO SIGNAL DETECTED</div>
-                <p style="color:#666; font-size:12px;">(Add ?uid=player_1 to the URL)</p>
+                <p style="color:#666; font-size:12px; margin-top:10px;">
+                    1. Close this app.<br>
+                    2. Open the link with ?uid=player_1 in Chrome.<br>
+                    3. Re-open this app.
+                </p>
             `;
         } else {
             // Connect to that specific player
@@ -89,10 +107,9 @@
             const container = document.getElementById("ui-container");
             
             function drawSlot(type) {
-                // Safe check: if undefined, make it 'empty'
                 let safeType = type || 'empty';
                 let className = safeType === 'empty' ? 'slot' : `slot ${safeType}`;
-                let label = safeType === 'empty' ? '' : safeType.toUpperCase().substring(0, 1); // Just first letter
+                let label = safeType === 'empty' ? '' : safeType.toUpperCase().substring(0, 1);
                 return `<div class="${className}">${label}</div>`;
             }
 
@@ -136,3 +153,4 @@
 </body>
 
 </html>
+

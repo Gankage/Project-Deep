@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>THE DEEP: DM OVERWATCH</title>
+    <style>
+        body { background-color: #222; color: #ddd; font-family: sans-serif; padding: 20px; }
+        h1 { text-align: center; color: #fff; letter-spacing: 5px; text-transform: uppercase; }
+        
+        /* Grid Layout */
+        .grid-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        
+        /* Player Card */
+        .player-card { 
+            background: #333; border: 1px solid #555; width: 300px; padding: 15px; border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .player-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin-bottom: 10px; }
+        .player-name { font-weight: bold; font-size: 18px; color: #00ffcc; }
+        .player-lives { font-size: 12px; color: #aaa; }
+
+        /* Controls */
+        .control-group { margin-bottom: 15px; }
+        .label { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 4px; display: block; }
+        
+        /* HP Control */
+        .hp-control { display: flex; align-items: center; gap: 10px; }
+        .hp-display { font-size: 24px; font-weight: bold; width: 80px; text-align: center; background: #222; padding: 5px; border-radius: 4px; }
+        button { cursor: pointer; padding: 5px 15px; font-weight: bold; border: none; border-radius: 4px; }
+        .btn-minus { background: #ff4444; color: white; }
+        .btn-plus { background: #44ff44; color: black; }
+
+        /* Slot Control */
+        .slot-inputs { display: flex; flex-direction: column; gap: 5px; }
+        .slot-row { display: flex; gap: 5px; align-items: center; }
+        .slot-label { width: 40px; font-size: 12px; color: #aaa; }
+        select { flex-grow: 1; padding: 5px; background: #222; color: white; border: 1px solid #555; border-radius: 4px; }
+        
+        .loading { text-align: center; color: #666; margin-top: 50px; }
+    </style>
+</head>
+<body>
+
+    <h1>The Deep: Overwatch</h1>
+    
+    <div id="dashboard" class="grid-container">
+        <div class="loading">Scanning for signals...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCToYnskZ2co0iZfvEZ13zHiEYXw6eO1c",
+            authDomain: "the-deep-1c05d.firebaseapp.com",
+            projectId: "the-deep-1c05d",
+            storageBucket: "the-deep-1c05d.firebasestorage.app",
+            messagingSenderId: "646004798304",
+            appId: "1:646004798304:web:f1f5083b44de1dfc56a405",
+            measurementId: "G-95E7GGPPD5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const usersCol = collection(db, "users");
+
+        // GLOBAL MEMORY: Stores the latest data for every player so we can check math
+        let localPlayers = {};
+
+        onSnapshot(usersCol, (snapshot) => {
+            const dashboard = document.getElementById("dashboard");
+            dashboard.innerHTML = ""; // Clear current view
+
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const uid = docSnap.id; // e.g., "player_1"
+                
+                // SAVE to memory
+                localPlayers[uid] = data;
+
+                // Build the Card HTML
+                const card = document.createElement("div");
+                card.className = "player-card";
+                card.innerHTML = `
+                    <div class="player-header">
+                        <span class="player-name">${data.name}</span>
+                        <span class="player-lives">Lives: ${data.lives}</span>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="label">Health Matrix</span>
+                        <div class="hp-control">
+                            <button class="btn-minus" onclick="modHp('${uid}', -1)">-</button>
+                            <div class="hp-display" style="color: ${data.hp <= 3 ? '#ff4444' : '#fff'}">${data.hp} / ${data.maxHp}</div>
+                            <button class="btn-plus" onclick="modHp('${uid}', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="label">Token Slots</span>
+                        <div class="slot-inputs">
+                            ${makeSlotSelector(uid, 'slot1', data.slot1)}
+                            ${makeSlotSelector(uid, 'slot2', data.slot2)}
+                            ${makeSlotSelector(uid, 'slot3', data.slot3)}
+                        </div>
+                    </div>
+                `;
+                dashboard.appendChild(card);
+            });
+        });
+
+        // HELPER: Creates the dropdown menu for slots
+        function makeSlotSelector(uid, slotName, currentValue) {
+            const options = ['empty', 'fire', 'water', 'earth', 'wind', 'void', 'time'];
+            let html = `<div class="slot-row"><span class="slot-label">${slotName}</span>`;
+            html += `<select onchange="updateSlot('${uid}', '${slotName}', this.value)">`;
+            
+            options.forEach(opt => {
+                const isSelected = (opt === currentValue) ? "selected" : "";
+                html += `<option value="${opt}" ${isSelected}>${opt.toUpperCase()}</option>`;
+            });
+            
+            html += `</select></div>`;
+            return html;
+        }
+
+        // GLOBAL FUNCTIONS
+        window.modHp = async (uid, amount) => {
+            const playerData = localPlayers[uid];
+            if (!playerData) return;
+
+            // 1. Calculate locally
+            let newHp = playerData.hp + amount;
+
+            // 2. Clamp values
+            if (newHp < 0) newHp = 0;
+            if (newHp > playerData.maxHp) newHp = playerData.maxHp;
+
+            // 3. Send exact value to database
+            const ref = doc(db, "users", uid);
+            await updateDoc(ref, { hp: newHp });
+        };
+
+        window.updateSlot = async (uid, slotName, newValue) => {
+            const ref = doc(db, "users", uid);
+            await updateDoc(ref, { [slotName]: newValue });
+        };
+
+    </script>
+</body>
+</html>

@@ -4,45 +4,96 @@
     <title>The Deep: Watch Interface</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <style>
-        body { background-color: #121212; color: white; font-family: courier, monospace; text-align: center; padding-top: 30px; user-select: none; }
-        .watch-face { border: 2px solid #444; padding: 20px; display: inline-block; border-radius: 30px; background: #000; width: 320px; box-shadow: 0 0 20px #111; }
-        h1 { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; margin-bottom: 5px; font-size: 28px; }
+        body { background-color: #000; color: white; font-family: courier, monospace; text-align: center; padding-top: 20px; user-select: none; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; }
         
-        .stat-box { margin: 15px 0; border: 1px solid #333; padding: 10px; border-radius: 10px; background: #111; }
-        .stat-label { font-size: 12px; color: #888; letter-spacing: 2px; margin-bottom: 5px; }
-        .stat-value { font-size: 36px; font-weight: bold; color: #fff; }
-        
-        .btn-row { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-        button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-family: courier, monospace; font-weight: bold; }
-        .btn-dmg { background-color: #ff3333; color: white; }
-        .btn-heal { background-color: #33cc33; color: black; }
-        
-        .slots-container { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
-        .slot { width: 60px; height: 60px; border: 2px dashed #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444; transition: all 0.3s; }
-        
-        .slot.fire { border: 2px solid #ff4400; background: radial-gradient(circle, #ffaa00 0%, #ff4400 100%); color: black; box-shadow: 0 0 15px #ff4400; text-shadow: none; font-weight: bold; border-style: solid;}
-        .slot.water { border: 2px solid #00ccff; background: radial-gradient(circle, #ccffff 0%, #00ccff 100%); color: black; box-shadow: 0 0 15px #00ccff; text-shadow: none; font-weight: bold; border-style: solid;}
-        .slot.earth { border: 2px solid #8B4513; background: radial-gradient(circle, #D2691E 0%, #8B4513 100%); color: white; box-shadow: 0 0 15px #8B4513; text-shadow: none; font-weight: bold; border-style: solid;}
-        .slot.wind { border: 2px solid #ADD8E6; background: radial-gradient(circle, #E0FFFF 0%, #87CEEB 100%); color: black; box-shadow: 0 0 15px #ADD8E6; text-shadow: none; font-weight: bold; border-style: solid;}
-        .slot.time { border: 2px solid #FFD700; background: radial-gradient(circle, #FFFACD 0%, #DAA520 100%); color: black; box-shadow: 0 0 15px #DAA520; text-shadow: none; font-weight: bold; border-style: solid;}
-        .slot.empty { background: transparent; }
+        /* The Device Container */
+        .watch-face { 
+            border: 2px solid #333; padding: 20px; border-radius: 40px; 
+            background: linear-gradient(145deg, #111, #000); 
+            width: 85%; max-width: 350px; 
+            box-shadow: 0 0 30px #000; 
+            position: relative; flex-grow: 1; max-height: 80vh;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
 
-        .loading { color: gray; font-size: 14px; }
-        .error { color: #ff3333; font-size: 16px; margin-top: 20px; }
+        h1 { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        
+        /* Stats Area */
+        .stats-row { display: flex; justify-content: space-between; margin-top: 15px; gap: 10px; }
+        .stat-box { border: 1px solid #333; padding: 10px; border-radius: 10px; background: #0a0a0a; flex-grow: 1; }
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 1px; margin-bottom: 2px; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #fff; }
+        
+        /* Buttons */
+        .btn-row { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+        button { padding: 8px 15px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; font-family: courier, monospace; font-weight: bold; }
+        .btn-dmg { background-color: #cc2222; color: white; }
+        .btn-heal { background-color: #22cc22; color: black; }
+        
+        /* THE ARC REACTOR (Master Slot) */
+        .reactor-container { 
+            display: flex; justify-content: center; align-items: center; 
+            margin: 20px 0; flex-grow: 1; 
+        }
+        .master-slot { 
+            width: 140px; height: 140px; 
+            border: 4px dashed #333; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 14px; color: #333; 
+            transition: all 0.5s ease; 
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Active Token Styles */
+        .master-slot.active { border-style: solid; box-shadow: 0 0 30px rgba(255,255,255,0.1); animation: pulse 3s infinite; }
+        .master-slot.fire { border-color: #ff4400; background: radial-gradient(circle, #ffaa00 0%, #330000 100%); color: transparent; box-shadow: 0 0 40px #ff4400; }
+        .master-slot.water { border-color: #00ccff; background: radial-gradient(circle, #ccffff 0%, #001133 100%); color: transparent; box-shadow: 0 0 40px #00ccff; }
+        .master-slot.earth { border-color: #8B4513; background: radial-gradient(circle, #D2691E 0%, #1a0f00 100%); color: transparent; box-shadow: 0 0 40px #8B4513; }
+        .master-slot.wind { border-color: #ADD8E6; background: radial-gradient(circle, #E0FFFF 0%, #002233 100%); color: transparent; box-shadow: 0 0 40px #ADD8E6; }
+        
+        /* Token Icon (Letter in middle) */
+        .token-icon { font-size: 60px; font-weight: bold; color: rgba(255,255,255,0.8); text-shadow: 0 0 10px black; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Popup */
+        #item-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .modal-content { background: #111; border: 2px solid #00ffcc; padding: 30px; border-radius: 20px; width: 80%; text-align: center; box-shadow: 0 0 30px rgba(0,255,204,0.2); }
+        .close-btn { margin-top: 20px; padding: 15px 40px; background: transparent; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 5px; text-transform: uppercase; letter-spacing: 2px; }
+
+        .loading { color: gray; font-size: 12px; margin-top: 20px;}
+        .error { color: #ff3333; }
     </style>
 </head>
 <body>
 
+    <div id="item-modal">
+        <div class="modal-content">
+            <h2 id="m-title" style="color:#00ffcc; margin:0 0 10px 0;">SCANNING...</h2>
+            <div id="m-type" style="color:#666; font-size:10px; margin-bottom:20px;">...</div>
+            <p id="m-desc" style="color:#ccc; font-style:italic; line-height:1.5;">Reading data...</p>
+            <div id="m-effect" style="border-top:1px solid #333; padding-top:15px; margin-top:15px; color:#fff; font-weight:bold;"></div>
+            <button class="close-btn" onclick="closeModal()">CLOSE</button>
+        </div>
+    </div>
+
     <div class="watch-face">
-        <div id="ui-container">
+        <div id="ui-container" style="height:100%; display:flex; flex-direction:column;">
             <div class="loading">Booting Sequence...</div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBCToYnskZ2co0iZfvEZ13zHiEYXw6eO1c",
@@ -57,48 +108,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- NEW "REMEMBER ME" LOGIC ---
-        
-        // 1. Check URL for ID
+        // Identity Logic
         const urlParams = new URLSearchParams(window.location.search);
         let userId = urlParams.get('uid');
-
-        // 2. If URL has ID, save it to phone memory
-        if (userId) {
-            localStorage.setItem("deep_userid", userId);
-            console.log("Identity Saved:", userId);
-        } 
-        // 3. If URL is empty, look in phone memory
-        else {
-            userId = localStorage.getItem("deep_userid");
-            console.log("Identity Loaded from Memory:", userId);
-        }
+        if (userId) { localStorage.setItem("deep_userid", userId); } 
+        else { userId = localStorage.getItem("deep_userid"); }
         
-        // -------------------------------
-
         let playerRef = null;
         let localData = null;
 
         if (!userId) {
-            document.getElementById("ui-container").innerHTML = `
-                <div class='error'>NO SIGNAL DETECTED</div>
-                <p style="color:#666; font-size:12px; margin-top:10px;">
-                    1. Close this app.<br>
-                    2. Open the link with ?uid=player_1 in Chrome.<br>
-                    3. Re-open this app.
-                </p>
-            `;
+            document.getElementById("ui-container").innerHTML = `<div class='error' style='margin:auto;'>NO SIGNAL</div>`;
         } else {
-            // Connect to that specific player
             playerRef = doc(db, "users", userId);
-            
-            // Listen for data
             onSnapshot(playerRef, (docSnap) => {
                 if (docSnap.exists()) {
                     localData = docSnap.data();
                     renderApp(localData);
-                } else {
-                    document.getElementById("ui-container").innerHTML = `<div class='error'>UNKNOWN SOUL: ${userId}</div>`;
                 }
             });
         }
@@ -106,34 +132,34 @@
         function renderApp(data) {
             const container = document.getElementById("ui-container");
             
-            function drawSlot(type) {
-                let safeType = type || 'empty';
-                let className = safeType === 'empty' ? 'slot' : `slot ${safeType}`;
-                let label = safeType === 'empty' ? '' : safeType.toUpperCase().substring(0, 1);
-                return `<div class="${className}">${label}</div>`;
-            }
-
+            // New "activeToken" Logic
+            const token = data.activeToken || 'empty';
+            const isActive = token !== 'empty';
+            const displayChar = isActive ? token.charAt(0).toUpperCase() : '';
+            
             container.innerHTML = `
                 <h1>${data.name}</h1>
                 
-                <div class="stat-box">
-                    <div class="stat-label">VITALITY</div>
-                    <div class="stat-value" style="color: ${data.hp <= 3 ? 'red' : 'white'}">${data.hp} / ${data.maxHp}</div>
-                    <div class="btn-row">
-                        <button id="btn-dmg" class="btn-dmg">-</button>
-                        <button id="btn-heal" class="btn-heal">+</button>
+                <div class="reactor-container">
+                    <div class="master-slot ${token} ${isActive ? 'active' : ''}" 
+                         onclick="window.showItem('${token}')">
+                         <div class="token-icon">${displayChar}</div>
                     </div>
                 </div>
 
-                <div class="stat-box">
-                    <div class="stat-label">LIVES</div>
-                    <div class="stat-value">${data.lives}</div>
-                </div>
-
-                <div class="slots-container">
-                    ${drawSlot(data.slot1)}
-                    ${drawSlot(data.slot2)}
-                    ${drawSlot(data.slot3)}
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-label">VITALITY</div>
+                        <div class="stat-value" style="color: ${data.hp <= 3 ? '#ff3333' : '#fff'}">${data.hp} / ${data.maxHp}</div>
+                        <div class="btn-row">
+                            <button class="btn-dmg" id="btn-dmg">-</button>
+                            <button class="btn-heal" id="btn-heal">+</button>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">LIVES</div>
+                        <div class="stat-value">${data.lives}</div>
+                    </div>
                 </div>
             `;
 
@@ -148,8 +174,34 @@
             if (newHp > localData.maxHp) newHp = localData.maxHp;
             await updateDoc(playerRef, { hp: newHp });
         }
+
+        // Popup Logic
+        window.showItem = async (type) => {
+            if (!type || type === 'empty') return;
+            
+            const modal = document.getElementById("item-modal");
+            document.getElementById("m-title").innerText = "ACCESSING...";
+            document.getElementById("m-desc").innerText = "Decrypting rune data...";
+            document.getElementById("m-effect").innerText = "";
+            modal.style.display = "flex";
+
+            const itemId = "token_" + type; 
+            try {
+                const itemSnap = await getDoc(doc(db, "items", itemId));
+                if (itemSnap.exists()) {
+                    const i = itemSnap.data();
+                    document.getElementById("m-title").innerText = i.name;
+                    document.getElementById("m-type").innerText = i.type;
+                    document.getElementById("m-desc").innerText = i.description;
+                    document.getElementById("m-effect").innerText = i.effect;
+                } else {
+                    document.getElementById("m-title").innerText = "UNKNOWN";
+                    document.getElementById("m-desc").innerText = "No database entry found.";
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        window.closeModal = () => { document.getElementById("item-modal").style.display = "none"; };
     </script>
-
 </body>
-
 </html>

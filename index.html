@@ -146,6 +146,12 @@
         </div>
     </div>
 
+    <div id="inv-modal">
+        <h2 style="color:#fff; margin-top:0;">STORAGE</h2>
+        <div id="inv-list" class="inv-grid"></div>
+        <button class="inv-btn" onclick="closeInv()">CLOSE</button>
+    </div>
+    
     <div class="watch-face">
         <div id="ui-container" style="height:100%; display:flex; flex-direction:column;">
             <div class="loading">Booting Sequence...</div>
@@ -221,6 +227,7 @@
                         <div class="stat-label">LIVES</div>
                         <div class="stat-value">${data.lives}</div>
                     </div>
+                    <button class="inv-btn" onclick="openInv()">INVENTORY</button>
                 </div>
             `;
 
@@ -228,6 +235,8 @@
             document.getElementById("btn-heal").addEventListener("click", () => adjustHealth(1));
         }
 
+
+        
         async function adjustHealth(amount) {
             if (!localData || !playerRef) return;
             let newHp = localData.hp + amount;
@@ -263,7 +272,48 @@
         };
 
         window.closeModal = () => { document.getElementById("item-modal").style.display = "none"; };
+
+// --- INVENTORY LOGIC ---
+        
+        // 1. Open the Bag
+        window.openInv = () => {
+            const modal = document.getElementById("inv-modal");
+            const list = document.getElementById("inv-list");
+            
+            modal.style.display = "flex"; // Show the box
+            list.innerHTML = ""; // Clear old list
+
+            // Grab the array from Firebase data (or empty list if none)
+            const inventory = localData.inventory || [];
+            
+            // Add an "Unequip" (X) button first
+            list.innerHTML += `<div class="inv-item" onclick="equipToken('empty')">X</div>`;
+
+            // Loop through every item in the database array
+            inventory.forEach(item => {
+                // Add a circle for this item
+                list.innerHTML += `
+                    <div class="inv-item ${item}" onclick="equipToken('${item}')">
+                        ${item.charAt(0).toUpperCase()}
+                    </div>
+                `;
+            });
+        };
+
+        // 2. Close the Bag
+        window.closeInv = () => { 
+            document.getElementById("inv-modal").style.display = "none"; 
+        };
+
+        // 3. Equip Item (Send command to Database)
+        window.equipToken = async (tokenName) => {
+            // Write to the 'activeToken' field in Firebase
+            await updateDoc(playerRef, { activeToken: tokenName });
+            window.closeInv(); // Close the menu
+        };
+        
     </script>
 </body>
 </html>
+
 
